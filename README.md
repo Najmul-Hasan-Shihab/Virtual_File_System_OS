@@ -66,8 +66,4 @@ vfs_root/: Directory representing the root of the virtual file system.
 Contributing
 Contributions are welcome! If you have suggestions for improvements or new features, feel free to open an issue or submit a pull request.
 
-## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
 
-## Acknowledgements
-This project was inspired by the need to understand and simulate the workings of a traditional file system using Python. Special thanks to the open-source community for providing valuable resources and references.

@@ -1,9 +1,12 @@
 ### futuristic_vfs_app.py
 import os
+import shutil
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import messagebox, filedialog
 from vfs_core import VFS
+from tkinter import Listbox, Text
+
 
 class VFSApp:
     def __init__(self, root):
@@ -63,6 +66,10 @@ class VFSApp:
         filemenu.add_command(label="Exit", command=self.on_exit)
         menubar.add_cascade(label="\u2699 File Ops", menu=filemenu)
 
+        version_menu = ttk.Menu(menubar, tearoff=0)
+        version_menu.add_command(label="View File Versions", command=self.view_file_versions)
+        menubar.add_cascade(label="\U0001F5C3 Versioning", menu=version_menu)
+
         thememenu = ttk.Menu(menubar, tearoff=0)
         for theme in ["darkly", "superhero", "cyborg", "solar", "morph"]:
             thememenu.add_command(
@@ -99,7 +106,7 @@ class VFSApp:
         ttk.Label(
             frame,
             text=desc,
-            font=font_normal,
+            font=("Consolas", 11),
             bootstyle="secondary",
             anchor="center",
             justify="center"
@@ -125,13 +132,84 @@ class VFSApp:
         if messagebox.askokcancel("Exit", "Are you sure you want to exit?"):
             self.root.quit()
 
+    def view_file_versions(self):
+        def layout(dialog):
+            import os
+            from tkinter import Listbox, Text
+
+            frame = ttk.Frame(dialog, padding=10)
+            frame.pack(fill=BOTH, expand=True)
+
+            ttk.Label(frame, text="File Name: ").pack(pady=5)
+            name_entry = ttk.Entry(frame, width=40)
+            name_entry.pack()
+
+            ttk.Button(frame, text="Load Versions", bootstyle="info-outline", command=lambda: fetch_versions(name_entry.get())).pack(pady=5)
+
+            version_list = Listbox(frame, height=5)
+            version_list.pack(fill=BOTH, expand=True, padx=5, pady=5)
+
+            content_area = Text(frame, height=7, wrap="word")
+            content_area.pack(fill=BOTH, expand=True, padx=5, pady=5)
+
+            button_frame = ttk.Frame(frame)
+            button_frame.pack(fill=X, pady=5)
+            ttk.Button(
+                button_frame,
+                text="Restore Selected Version",
+                bootstyle="warning-outline",
+                command=lambda: restore_version(version_list)
+            ).pack(pady=5)
+
+            def fetch_versions(fname):
+                versions = self.vfs.get_file_versions(fname)
+                version_list.delete(0, 'end')
+                content_area.delete("1.0", END)
+                if versions:
+                    for v in versions:
+                        version_list.insert(END, v)
+                else:
+                    messagebox.showinfo("No Versions", f"No versions found for '{fname}'.")
+
+            def show_version_content(evt):
+                selected = version_list.curselection()
+                if selected:
+                    version_path = version_list.get(selected[0])
+                    try:
+                        with open(version_path, "r") as f:
+                            content = f.read()
+                        content_area.delete("1.0", END)
+                        content_area.insert("1.0", content)
+                    except Exception as e:
+                        messagebox.showerror("Error", str(e))
+
+            def restore_version(vlist):
+                selected = vlist.curselection()
+                if selected:
+                    version_path = vlist.get(selected[0])
+                    target_name = os.path.basename(version_path).split("_v")[0]
+                    try:
+                        with open(version_path, "r") as vfile:
+                            data = vfile.read()
+                        self.vfs.update_file(target_name, data)
+                        messagebox.showinfo("Success", f"'{target_name}' restored from version.")
+                    except Exception as e:
+                        messagebox.showerror("Error", str(e))
+
+            version_list.bind("<<ListboxSelect>>", show_version_content)
+
+            return frame
+
+        self.show_dialog("View File Versions", layout)
+
     def show_dialog(self, title, content_frame):
         dialog = ttk.Toplevel(self.root)
         dialog.title(title)
-        dialog.geometry("450x350")
-        dialog.resizable(False, False)
+        dialog.geometry("700x500")
+        dialog.resizable(True, True)
         content_frame(dialog).pack(fill=BOTH, expand=True)
         return dialog
+
 
     def create_file(self):
         def layout(dialog):
