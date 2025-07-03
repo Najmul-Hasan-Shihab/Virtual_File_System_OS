@@ -81,20 +81,20 @@ Run the Application:
 ## Graphical User Interface:
 Once the application is running, use the top menu bar to:
 
-📂 File Operations
-Create File: Add a new file to the virtual system
-Read File: View contents of an existing file
-Update File: Overwrite file content and trigger versioning
-Delete File: Permanently remove a file
-Search File: Find files and view metadata
+### 📂 File Operations
+-Create File: Add a new file to the virtual system
+-Read File: View contents of an existing file
+-Update File: Overwrite file content and trigger versioning
+-Delete File: Permanently remove a file
+-Search File: Find files and view metadata
 
-🔄 Version Control
+### 🔄 Version Control
 View File Versions: Browse historical versions and restore any
 
-📊 Analytics
+### 📊 Analytics
 Analytics Panel: View charts, statistics, and insights about file activity
 
-🎨 Theme
+### 🎨 Theme
 Switch Theme: Apply futuristic themes in real-time
 
 ## Project Structure
