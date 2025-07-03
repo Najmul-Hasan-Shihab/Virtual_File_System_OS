@@ -99,12 +99,12 @@ Switch Theme: Apply futuristic themes in real-time
 
 ## Project Structure
 ### Virtual-File-System
--futuristic_vfs_app.py   # Main GUI app (Neo UI)
--vfs_core.py             # Core file logic & versioning
--vfs_metadata.py         # Metadata indexing and file search
--requirements.txt        # Python dependencies
--vfs_root/               # Root directory of the virtual file system
--assets/                 # (Optional) Icons, logos, splash media
+- futuristic_vfs_app.py   # Main GUI app (Neo UI)
+- vfs_core.py             # Core file logic & versioning
+- vfs_metadata.py         # Metadata indexing and file search
+- requirements.txt        # Python dependencies
+- vfs_root/               # Root directory of the virtual file system
+- assets/                 # (Optional) Icons, logos, splash media
 
 ## Contributions
 Contributions are welcome!
