@@ -70,6 +70,11 @@ class VFSApp:
         version_menu.add_command(label="View File Versions", command=self.view_file_versions)
         menubar.add_cascade(label="\U0001F5C3 Versioning", menu=version_menu)
 
+        trash_menu = ttk.Menu(menubar, tearoff=0)
+        trash_menu.add_command(label="View Trash Bin", command=self.view_trash_bin)
+        menubar.add_cascade(label="🗑️ Trash", menu=trash_menu)
+
+
         thememenu = ttk.Menu(menubar, tearoff=0)
         for theme in ["darkly", "superhero", "cyborg", "solar", "morph"]:
             thememenu.add_command(
@@ -201,6 +206,61 @@ class VFSApp:
             return frame
 
         self.show_dialog("View File Versions", layout)
+
+    
+    def view_trash_bin(self):
+        def layout(dialog):
+            from tkinter import Listbox
+
+            frame = ttk.Frame(dialog, padding=10)
+            frame.pack(fill=BOTH, expand=True)
+
+            trash_list = Listbox(frame, height=10)
+            trash_list.pack(fill=BOTH, expand=True, padx=5, pady=5)
+
+            def load_trash():
+                trash_list.delete(0, END)
+                trashed_files = self.vfs.list_trashed_files()
+                if trashed_files:
+                    for f in trashed_files:
+                        trash_list.insert(END, f)
+                else:
+                    trash_list.insert(END, "<Trash is empty>")
+
+            def restore_selected():
+                selected = trash_list.curselection()
+                if selected:
+                    fname = trash_list.get(selected[0])
+                    if "Trash is empty" in fname:
+                        return
+                    try:
+                        self.vfs.restore_file(fname)
+                        messagebox.showinfo("Success", f"'{fname}' restored.")
+                        load_trash()
+                    except Exception as e:
+                        messagebox.showerror("Error", str(e))
+
+            def delete_selected():
+                selected = trash_list.curselection()
+                if selected:
+                    fname = trash_list.get(selected[0])
+                    if "Trash is empty" in fname:
+                        return
+                    try:
+                        self.vfs.permanently_delete_file(fname)
+                        messagebox.showinfo("Deleted", f"'{fname}' permanently removed.")
+                        load_trash()
+                    except Exception as e:
+                        messagebox.showerror("Error", str(e))
+
+            ttk.Button(frame, text="Restore", bootstyle="success-outline", command=restore_selected).pack(pady=5)
+            ttk.Button(frame, text="Delete Permanently", bootstyle="danger-outline", command=delete_selected).pack(pady=5)
+
+            load_trash()
+            return frame
+
+        self.show_dialog("Trash Bin", layout)
+
 
     def show_dialog(self, title, content_frame):
         dialog = ttk.Toplevel(self.root)

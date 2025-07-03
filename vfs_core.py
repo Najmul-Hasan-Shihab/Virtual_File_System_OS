@@ -40,9 +40,16 @@ class VFS:
     def delete_file(self, file_name):
         file_path = os.path.join(self.root_directory, file_name)
         if os.path.exists(file_path):
-            os.remove(file_path)
+            trash_dir = os.path.join(self.root_directory, ".trash")
+            os.makedirs(trash_dir, exist_ok=True)
+
+            trashed_name = f"{file_name}__{int(time.time())}"
+            trash_path = os.path.join(trash_dir, trashed_name)
+
+            shutil.move(file_path, trash_path)
         else:
             raise FileNotFoundError(f"File '{file_name}' does not exist.")
+
 
     def search_files(self, file_name):
         file_path = os.path.join(self.root_directory, file_name)
@@ -76,3 +83,30 @@ class VFS:
             if fname.startswith(base_name + "_v") and fname.endswith(ext):
                 version_files.append(os.path.join(versions_dir, fname))
         return sorted(version_files)
+    
+    def list_trashed_files(self):
+        trash_dir = os.path.join(self.root_directory, ".trash")
+        if not os.path.exists(trash_dir):
+            return []
+        return os.listdir(trash_dir)
+    
+    def restore_file(self, trashed_name):
+        trash_dir = os.path.join(self.root_directory, ".trash")
+        source = os.path.join(trash_dir, trashed_name)
+
+        if not os.path.exists(source):
+            raise FileNotFoundError("Trashed file not found.")
+
+        original_name = trashed_name.split("__")[0]
+        dest = os.path.join(self.root_directory, original_name)
+
+        shutil.move(source, dest)
+
+    def permanently_delete_file(self, trashed_name):
+        trash_dir = os.path.join(self.root_directory, ".trash")
+        target = os.path.join(trash_dir, trashed_name)
+        if os.path.exists(target):
+            os.remove(target)
+
+
+
