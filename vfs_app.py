@@ -74,6 +74,20 @@ class VFSApp:
         trash_menu.add_command(label="View Trash Bin", command=self.view_trash_bin)
         menubar.add_cascade(label="🗑️ Trash", menu=trash_menu)
 
+        tree_menu = ttk.Menu(menubar, tearoff=0)
+        tree_menu.add_command(label="Open Directory Tree", command=self.open_directory_tree)
+        menubar.add_cascade(label="📂 Navigation", menu=tree_menu)
+
+        batch_menu = ttk.Menu(menubar, tearoff=0)
+        batch_menu.add_command(label="Batch File Manager", command=self.open_batch_file_manager)
+        menubar.add_cascade(label="🧰 Batch Ops", menu=batch_menu)
+
+        analytics_menu = ttk.Menu(menubar, tearoff=0)
+        analytics_menu.add_command(label="Open Analytics Panel", command=self.open_analytics_panel)
+        menubar.add_cascade(label="📊 Analytics", menu=analytics_menu)
+
+
+
 
         thememenu = ttk.Menu(menubar, tearoff=0)
         for theme in ["darkly", "superhero", "cyborg", "solar", "morph"]:
@@ -260,6 +274,244 @@ class VFSApp:
             return frame
 
         self.show_dialog("Trash Bin", layout)
+
+
+    def open_directory_tree(self):
+        import os
+        from ttkbootstrap import Treeview
+
+        def layout(dialog):
+            frame = ttk.Frame(dialog, padding=10)
+            frame.pack(fill=BOTH, expand=True)
+
+            tree = Treeview(frame)
+            tree.pack(fill=BOTH, expand=True)
+
+            def populate_tree(parent, path):
+                try:
+                    for entry in os.listdir(path):
+                        full_path = os.path.join(path, entry)
+                        is_dir = os.path.isdir(full_path)
+                        node = tree.insert(parent, "end", text=entry, open=False)
+                        if is_dir:
+                            populate_tree(node, full_path)
+                except PermissionError:
+                    pass
+
+            def on_node_double_click(event):
+                selected = tree.focus()
+                node_path = get_full_path(tree, selected)
+                if os.path.isfile(node_path):
+                    try:
+                        content = self.vfs.read_file(os.path.relpath(node_path, self.vfs.root_directory))
+                        messagebox.showinfo("File Preview", content[:500] + ("\n\n...[truncated]" if len(content) > 500 else ""))
+                    except Exception as e:
+                        messagebox.showerror("Error", str(e))
+
+            def get_full_path(tree, node):
+                path = []
+                while node:
+                    path.insert(0, tree.item(node)["text"])
+                    node = tree.parent(node)
+                return os.path.join(self.vfs.root_directory, *path)
+
+            tree.bind("<Double-1>", on_node_double_click)
+            populate_tree("", self.vfs.root_directory)
+
+            return frame
+
+        self.show_dialog("Directory Tree", layout)
+
+
+    def open_batch_file_manager(self):
+        import os
+        from tkinter import Listbox, MULTIPLE
+
+        def layout(dialog):
+            frame = ttk.Frame(dialog, padding=10)
+            frame.pack(fill=BOTH, expand=True)
+
+            ttk.Label(frame, text="Select files to operate on:").pack(pady=5)
+
+            file_listbox = Listbox(frame, selectmode=MULTIPLE, height=12)
+            file_listbox.pack(fill=BOTH, expand=True, padx=5, pady=5)
+
+            all_files = [
+                f for f in os.listdir(self.vfs.root_directory)
+                if os.path.isfile(os.path.join(self.vfs.root_directory, f))
+            ]
+            for f in all_files:
+                file_listbox.insert(END, f)
+
+            def get_selected_files():
+                return [file_listbox.get(i) for i in file_listbox.curselection()]
+
+            def batch_delete():
+                for fname in get_selected_files():
+                    try:
+                        self.vfs.delete_file(fname)
+                    except Exception as e:
+                        messagebox.showerror("Error", str(e))
+                refresh()
+
+            def batch_copy():
+                dest = filedialog.askdirectory(title="Select Destination Folder")
+                if dest:
+                    for fname in get_selected_files():
+                        src = os.path.join(self.vfs.root_directory, fname)
+                        dst = os.path.join(dest, fname)
+                        try:
+                            shutil.copy2(src, dst)
+                        except Exception as e:
+                            messagebox.showerror("Copy Failed", str(e))
+
+            def batch_move():
+                dest = filedialog.askdirectory(title="Select Destination Folder")
+                if dest:
+                    for fname in get_selected_files():
+                        src = os.path.join(self.vfs.root_directory, fname)
+                        dst = os.path.join(dest, fname)
+                        try:
+                            shutil.move(src, dst)
+                        except Exception as e:
+                            messagebox.showerror("Move Failed", str(e))
+                    refresh()
+
+            def refresh():
+                file_listbox.delete(0, END)
+                current = [
+                    f for f in os.listdir(self.vfs.root_directory)
+                    if os.path.isfile(os.path.join(self.vfs.root_directory, f))
+                ]
+                for f in current:
+                    file_listbox.insert(END, f)
+
+            button_frame = ttk.Frame(frame)
+            button_frame.pack(pady=5)
+
+            ttk.Button(button_frame, text="Delete", bootstyle="danger-outline", command=batch_delete).pack(side=LEFT, padx=5)
+            ttk.Button(button_frame, text="Copy To...", bootstyle="info-outline", command=batch_copy).pack(side=LEFT, padx=5)
+            ttk.Button(button_frame, text="Move To...", bootstyle="warning-outline", command=batch_move).pack(side=LEFT, padx=5)
+
+            return frame
+
+        self.show_dialog("Batch File Operations", layout)
+
+
+    def open_analytics_panel(self):
+        import os
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+        def layout(dialog):
+            frame = ttk.Frame(dialog, padding=20)
+            frame.pack(fill=BOTH, expand=True)
+
+            stats, filetype_data, date_data = self.collect_file_stats(
+                return_filetypes=True,
+                return_dates=True
+            )
+
+            # Text stats (left)
+            text_frame = ttk.Frame(frame)
+            text_frame.pack(side=LEFT, fill=Y, padx=10)
+
+            for key, value in stats.items():
+                ttk.Label(
+                    text_frame,
+                    text=f"{key}: {value}",
+                    font=("Consolas", 10),
+                    bootstyle="info"
+                ).pack(anchor="w", pady=2)
+
+            # Charts (right)
+            chart_frame = ttk.Frame(frame)
+            chart_frame.pack(side=RIGHT, fill=BOTH, expand=True)
+
+            fig = Figure(figsize=(6, 4), dpi=100)
+            ax1 = fig.add_subplot(211)  # Pie chart
+            ax2 = fig.add_subplot(212)  # Timeline
+
+            if filetype_data:
+                labels = list(filetype_data.keys())
+                sizes = list(filetype_data.values())
+                ax1.pie(sizes, labels=labels, autopct="%1.1f%%", startangle=140)
+                ax1.set_title("File Type Distribution", fontsize=10)
+
+            if date_data:
+                dates = sorted(date_data.keys())
+                counts = [date_data[d] for d in dates]
+                ax2.plot(dates, counts, marker="o", linestyle="-", color="steelblue")
+                ax2.set_title("File Creation Timeline", fontsize=10)
+                ax2.set_xlabel("Date")
+                ax2.set_ylabel("Files Created")
+                fig.autofmt_xdate(rotation=45)
+
+            canvas = FigureCanvasTkAgg(fig, master=chart_frame)
+            canvas.draw()
+            canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
+            return frame
+
+        self.show_dialog("📊 VFS Analytics Panel", layout)
+
+
+    def collect_file_stats(self, return_filetypes=False, return_dates=False):
+        import os
+        from collections import defaultdict
+        from datetime import datetime
+
+        files = [
+            f for f in os.listdir(self.vfs.root_directory)
+            if os.path.isfile(os.path.join(self.vfs.root_directory, f))
+        ]
+
+        total_files = len(files)
+        total_size = 0
+        largest_file = ("", 0)
+        last_modified = ("", 0)
+        extensions = {}
+        created_dates = defaultdict(int)
+
+        for f in files:
+            path = os.path.join(self.vfs.root_directory, f)
+            size = os.path.getsize(path)
+            mtime = os.path.getmtime(path)
+            ctime = os.path.getctime(path)
+
+            total_size += size
+            if size > largest_file[1]:
+                largest_file = (f, size)
+            if mtime > last_modified[1]:
+                last_modified = (f, mtime)
+
+            ext = os.path.splitext(f)[1] or "None"
+            extensions[ext] = extensions.get(ext, 0) + 1
+
+            date_str = datetime.fromtimestamp(ctime).strftime("%Y-%m-%d")
+            created_dates[date_str] += 1
+
+        size_mb = round(total_size / (1024 * 1024), 2)
+        largest_name = largest_file[0] or "N/A"
+        largest_size = round(largest_file[1] / 1024, 2)
+        modified_name = last_modified[0] or "N/A"
+
+        stat_text = {
+            "Total Files": total_files,
+            "Total Size": f"{size_mb} MB",
+            "Largest File": f"{largest_name} ({largest_size} KB)",
+            "Last Modified": modified_name
+        }
+
+        result = [stat_text]
+        if return_filetypes:
+            result.append(extensions)
+        if return_dates:
+            result.append(dict(created_dates))
+
+        return tuple(result) if len(result) > 1 else result[0]
+
+
 
 
     def show_dialog(self, title, content_frame):
