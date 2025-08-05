@@ -109,11 +109,11 @@ Analytics Panel: View charts, statistics, and insights about file activity
 
 🧠 CPU Scheduling
 Gantt Chart Visualizations for:
-FCFS
-SJF
-SRTF
-Round Robin (time quantum input)
-Priority Scheduling (both Preemptive & Non-Preemptive)
+-FCFS
+-SJF
+-SRTF
+-Round Robin (time quantum input)
+-Priority Scheduling (both Preemptive & Non-Preemptive)
 
 🎨 Theme
 Switch Theme: Apply futuristic themes in real-time
@@ -132,7 +132,7 @@ Switch Theme: Apply futuristic themes in real-time
 
 ## Project Structure
 ### Virtual-File-System
-- futuristic_vfs_app.py   # Main GUI app (Neo UI)
+- vfs_app.py              # Main GUI app (Neo UI)
 - vfs_core.py             # Core file logic & versioning
 - vfs_metadata.py         # Metadata indexing and file search
 - requirements.txt        # Python dependencies
