@@ -8,6 +8,9 @@ from vfs_core import VFS
 from tkinter import Listbox, Text
 
 
+
+
+
 class VFSApp:
     def __init__(self, root):
         self.root = root
@@ -17,7 +20,7 @@ class VFSApp:
     def splash_screen(self):
         splash = ttk.Toplevel()
         splash.title("Welcome :: Virtual File System")
-        splash.geometry("500x300+500+250")
+        splash.geometry("800x500+500+250")
         splash.resizable(False, False)
         splash.overrideredirect(True)
 
@@ -86,6 +89,15 @@ class VFSApp:
         analytics_menu.add_command(label="Open Analytics Panel", command=self.open_analytics_panel)
         menubar.add_cascade(label="📊 Analytics", menu=analytics_menu)
 
+        scheduling_menu = ttk.Menu(menubar, tearoff=0)
+        scheduling_menu.add_command(label="Visualize FCFS", command=self.visualize_fcfs)
+        scheduling_menu.add_command(label="Visualize SJF", command=self.visualize_sjf)  # NEW
+        scheduling_menu.add_command(label="Visualize SRTF", command=self.visualize_srtf)  # NEW
+        scheduling_menu.add_command(label="Priority (Non-Preemptive)", command=self.visualize_priority_non_preemptive)
+        scheduling_menu.add_command(label="Priority (Preemptive)", command=self.visualize_priority_preemptive)
+        scheduling_menu.add_command(label="Round Robin", command=self.visualize_round_robin)  # NEW
+        menubar.add_cascade(label="🧠 CPU Scheduling", menu=scheduling_menu)
+
 
 
 
@@ -113,12 +125,13 @@ class VFSApp:
 
         desc = (
             "Interact with a virtual environment that emulates file system operations.\n"
-            "Use the menu to create, update, read or search files.\n\n"
+            "Use the menu to create, update, read or search files.\n"
+            "Visualize CPU Scheduling algorithms with dynamic Gantt charts.\n\n"
             "Credits:\n"
+            "- Mohammed Najmul Hasan Shihab\n"
             "- Mohammed Fahimul Hoque\n"
-            "- Omar Faruque\n"
-            "- Tonmoy Mutsuddy\n"
-            "- Md. Najmul Hasan Shihab\n\n"
+            "- Meskatunnur Manna\n"
+            "- Mohammad Shahariar Mostafa Sharif\n\n"
             "Course Teacher: Mohammed Arfat"
         )
 
@@ -220,6 +233,597 @@ class VFSApp:
             return frame
 
         self.show_dialog("View File Versions", layout)
+
+
+    # Visualize FCFS Scheduling
+    def visualize_fcfs(self):
+        def layout(dialog):
+            from tkinter import Text
+
+            input_frame = ttk.Frame(dialog, padding=10)
+            input_frame.pack(fill=BOTH, expand=True)
+
+            entries = {
+                "Processes (comma-separated)": None,
+                "Arrival Times (comma-separated)": None,
+                "Burst Times (comma-separated)": None
+            }
+
+            for label in entries:
+                ttk.Label(input_frame, text=label).pack()
+                entry = ttk.Entry(input_frame, width=60)
+                entry.pack(pady=5)
+                entries[label] = entry
+
+            ttk.Button(
+                input_frame,
+                text="Generate Charts",
+                bootstyle="success",
+                command=lambda: process_and_plot(entries)
+            ).pack(pady=10)
+
+            return input_frame
+
+        def process_and_plot(entries):
+            import matplotlib.pyplot as plt
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+            try:
+                processes = entries["Processes (comma-separated)"].get().split(",")
+                arrival_times = list(map(int, entries["Arrival Times (comma-separated)"].get().split(",")))
+                burst_times = list(map(int, entries["Burst Times (comma-separated)"].get().split(",")))
+
+                n = len(processes)
+                completion = [0] * n
+                turnaround = [0] * n
+                waiting = [0] * n
+
+                order = sorted(range(n), key=lambda i: arrival_times[i])
+                time = 0
+                gantt = []
+
+                for i in order:
+                    if arrival_times[i] > time:
+                        time = arrival_times[i]
+                    start = time
+                    time += burst_times[i]
+                    completion[i] = time
+                    turnaround[i] = completion[i] - arrival_times[i]
+                    waiting[i] = turnaround[i] - burst_times[i]
+                    gantt.append((processes[i], start, time))
+
+                # Plotting Gantt Chart
+                fig, ax = plt.subplots(figsize=(8, 2))
+                for idx, (pid, start, end) in enumerate(gantt):
+                    ax.barh(0, end - start, left=start, edgecolor='black', label=pid)
+                    ax.text(start + (end - start) / 2, 0, pid, ha='center', va='center', color='white')
+
+                ax.set_title("FCFS Gantt Chart")
+                ax.set_yticks([])
+                ax.set_xlabel("Time")
+                ax.grid(True)
+
+                chart_window = ttk.Toplevel(self.root)
+                chart_window.title("FCFS Visualization")
+                chart_window.geometry("800x300")
+
+                canvas = FigureCanvasTkAgg(fig, master=chart_window)
+                canvas.draw()
+                canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
+            except Exception as e:
+                messagebox.showerror("Input Error", f"Error: {e}")
+
+        self.show_dialog("First-Come, First-Served (FCFS)", layout)
+
+    # Visualize SJF Scheduling
+    def visualize_sjf(self):
+        def layout(dialog):
+            input_frame = ttk.Frame(dialog, padding=10)
+            input_frame.pack(fill=BOTH, expand=True)
+
+            entries = {
+                "Processes (comma-separated)": None,
+                "Arrival Times (comma-separated)": None,
+                "Burst Times (comma-separated)": None
+            }
+
+            for label in entries:
+                ttk.Label(input_frame, text=label).pack()
+                entry = ttk.Entry(input_frame, width=60)
+                entry.pack(pady=5)
+                entries[label] = entry
+
+            ttk.Button(
+                input_frame,
+                text="Generate Charts",
+                bootstyle="success",
+                command=lambda: process_and_plot(entries)
+            ).pack(pady=10)
+
+            return input_frame
+
+        def process_and_plot(entries):
+            import matplotlib.pyplot as plt
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+            try:
+                processes = entries["Processes (comma-separated)"].get().split(",")
+                arrival = list(map(int, entries["Arrival Times (comma-separated)"].get().split(",")))
+                burst = list(map(int, entries["Burst Times (comma-separated)"].get().split(",")))
+
+                n = len(processes)
+                completed = [False] * n
+                time = 0
+                gantt = []
+
+                while not all(completed):
+                    idx = -1
+                    min_bt = float("inf")
+                    for i in range(n):
+                        if arrival[i] <= time and not completed[i]:
+                            if burst[i] < min_bt:
+                                min_bt = burst[i]
+                                idx = i
+                    if idx == -1:
+                        time += 1
+                        continue
+                    start = time
+                    time += burst[idx]
+                    completed[idx] = True
+                    gantt.append((processes[idx], start, time))
+
+                # Plotting Gantt Chart
+                fig, ax = plt.subplots(figsize=(8, 2))
+                for idx, (pid, start, end) in enumerate(gantt):
+                    ax.barh(0, end - start, left=start, edgecolor='black')
+                    ax.text(start + (end - start) / 2, 0, pid, ha='center', va='center', color='white')
+
+                ax.set_title("SJF (Non-Preemptive) Gantt Chart")
+                ax.set_yticks([])
+                ax.set_xlabel("Time")
+                ax.grid(True)
+
+                chart_window = ttk.Toplevel(self.root)
+                chart_window.title("SJF Visualization")
+                chart_window.geometry("800x300")
+
+                canvas = FigureCanvasTkAgg(fig, master=chart_window)
+                canvas.draw()
+                canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
+            except Exception as e:
+                messagebox.showerror("Input Error", f"Error: {e}")
+
+        self.show_dialog("Shortest Job First (SJF)", layout)
+
+    ## Visualize SRTF Scheduling
+    def visualize_srtf(self):
+        def layout(dialog):
+            input_frame = ttk.Frame(dialog, padding=10)
+            input_frame.pack(fill=BOTH, expand=True)
+
+            entries = {
+                "Processes (comma-separated)": None,
+                "Arrival Times (comma-separated)": None,
+                "Burst Times (comma-separated)": None
+            }
+
+            for label in entries:
+                ttk.Label(input_frame, text=label).pack()
+                entry = ttk.Entry(input_frame, width=60)
+                entry.pack(pady=5)
+                entries[label] = entry
+
+            ttk.Button(
+                input_frame,
+                text="Generate Charts",
+                bootstyle="success",
+                command=lambda: process_and_plot(entries)
+            ).pack(pady=10)
+
+            return input_frame
+
+        def process_and_plot(entries):
+            import matplotlib.pyplot as plt
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+            import matplotlib.cm as cm
+            import numpy as np
+
+            try:
+                processes = entries["Processes (comma-separated)"].get().split(",")
+                arrival = list(map(int, entries["Arrival Times (comma-separated)"].get().split(",")))
+                burst = list(map(int, entries["Burst Times (comma-separated)"].get().split(",")))
+
+                n = len(processes)
+                remaining = burst[:]
+                complete = 0
+                time = 0
+                minm = float("inf")
+                shortest = 0
+                check = False
+                gantt = []
+                current_proc = None
+                start_time = None
+
+                while complete != n:
+                    for j in range(n):
+                        if arrival[j] <= time and remaining[j] < minm and remaining[j] > 0:
+                            minm = remaining[j]
+                            shortest = j
+                            check = True
+
+                    if not check:
+                        time += 1
+                        continue
+
+                    if current_proc != shortest:
+                        if current_proc is not None and start_time is not None:
+                            gantt.append((processes[current_proc], start_time, time))
+                        current_proc = shortest
+                        start_time = time
+
+                    remaining[shortest] -= 1
+                    minm = remaining[shortest]
+                    if minm == 0:
+                        minm = float("inf")
+
+                    if remaining[shortest] == 0:
+                        complete += 1
+                        finish_time = time + 1
+                        gantt.append((processes[shortest], start_time, finish_time))
+                        current_proc = None
+                        start_time = None
+                        check = False
+                    time += 1
+
+                # Color map for consistent process coloring
+                unique_pids = sorted(set([p[0] for p in gantt]))
+                colors = cm.tab20(np.linspace(0, 1, len(unique_pids)))
+                proc_color_map = {pid: colors[i] for i, pid in enumerate(unique_pids)}
+
+                fig, ax = plt.subplots(figsize=(10, 2))
+                for pid, start, end in gantt:
+                    ax.barh(0, end - start, left=start, edgecolor='black', color=proc_color_map[pid])
+                    ax.text(start + (end - start) / 2, 0, pid, ha='center', va='center', color='white', fontsize=8)
+
+                ax.set_title("SRTF (Preemptive SJF) Gantt Chart")
+                ax.set_yticks([])
+                ax.set_xlabel("Time")
+                ax.grid(True)
+
+                chart_window = ttk.Toplevel(self.root)
+                chart_window.title("SRTF Visualization")
+                chart_window.geometry("850x300")
+
+                canvas = FigureCanvasTkAgg(fig, master=chart_window)
+                canvas.draw()
+                canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
+            except Exception as e:
+                messagebox.showerror("Input Error", f"Error: {e}")
+
+        self.show_dialog("Shortest Remaining Time First (SRTF)", layout)
+
+    # Visualize Priority Scheduling (Non-Preemptive)
+    def visualize_priority_non_preemptive(self):
+        def layout(dialog):
+            input_frame = ttk.Frame(dialog, padding=10)
+            input_frame.pack(fill=BOTH, expand=True)
+
+            entries = {
+                "Processes (comma-separated)": None,
+                "Arrival Times (comma-separated)": None,
+                "Burst Times (comma-separated)": None,
+                "Priorities (comma-separated, lower=high priority)": None
+            }
+
+            for label in entries:
+                ttk.Label(input_frame, text=label).pack()
+                entry = ttk.Entry(input_frame, width=60)
+                entry.pack(pady=5)
+                entries[label] = entry
+
+            ttk.Button(
+                input_frame,
+                text="Generate Charts",
+                bootstyle="success",
+                command=lambda: process_and_plot(entries)
+            ).pack(pady=10)
+
+            return input_frame
+
+        def process_and_plot(entries):
+            import matplotlib.pyplot as plt
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+            import matplotlib.cm as cm
+            import numpy as np
+
+            try:
+                processes = entries["Processes (comma-separated)"].get().split(",")
+                arrival = list(map(int, entries["Arrival Times (comma-separated)"].get().split(",")))
+                burst = list(map(int, entries["Burst Times (comma-separated)"].get().split(",")))
+                priority = list(map(int, entries["Priorities (comma-separated, lower=high priority)"].get().split(",")))
+
+                n = len(processes)
+                completed = [False] * n
+                time = 0
+                gantt = []
+
+                while not all(completed):
+                    available = [
+                        (i, priority[i], arrival[i])
+                        for i in range(n)
+                        if arrival[i] <= time and not completed[i]
+                    ]
+
+                    if not available:
+                        time += 1
+                        continue
+
+                    # Sort by priority (lower is better), then arrival time
+                    available.sort(key=lambda x: (x[1], x[2]))
+                    idx = available[0][0]
+
+                    start_time = time
+                    end_time = time + burst[idx]
+                    gantt.append((processes[idx], start_time, end_time))
+                    time = end_time
+                    completed[idx] = True
+
+                # Color map
+                unique_pids = sorted(set([p[0] for p in gantt]))
+                colors = cm.tab20(np.linspace(0, 1, len(unique_pids)))
+                proc_color_map = {pid: colors[i] for i, pid in enumerate(unique_pids)}
+
+                fig, ax = plt.subplots(figsize=(10, 2))
+                for pid, start, end in gantt:
+                    ax.barh(0, end - start, left=start, edgecolor='black', color=proc_color_map[pid])
+                    ax.text(start + (end - start) / 2, 0, pid, ha='center', va='center', color='white', fontsize=8)
+
+                ax.set_title("Priority Scheduling (Non-Preemptive) Gantt Chart")
+                ax.set_yticks([])
+                ax.set_xlabel("Time")
+                ax.grid(True)
+
+                chart_window = ttk.Toplevel(self.root)
+                chart_window.title("Priority (Non-Preemptive) Visualization")
+                chart_window.geometry("850x300")
+
+                canvas = FigureCanvasTkAgg(fig, master=chart_window)
+                canvas.draw()
+                canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
+            except Exception as e:
+                messagebox.showerror("Input Error", f"Error: {e}")
+
+        self.show_dialog("Priority Scheduling (Non-Preemptive)", layout)
+
+    # Visualize Priority Scheduling (Preemptive)
+    def visualize_priority_preemptive(self):
+        def layout(dialog):
+            input_frame = ttk.Frame(dialog, padding=10)
+            input_frame.pack(fill=BOTH, expand=True)
+
+            entries = {
+                "Processes (comma-separated)": None,
+                "Arrival Times (comma-separated)": None,
+                "Burst Times (comma-separated)": None,
+                "Priorities (comma-separated, lower is higher)": None
+            }
+
+            for label in entries:
+                ttk.Label(input_frame, text=label).pack()
+                entry = ttk.Entry(input_frame, width=60)
+                entry.pack(pady=5)
+                entries[label] = entry
+
+            ttk.Button(
+                input_frame,
+                text="Generate Charts",
+                bootstyle="success",
+                command=lambda: process_and_plot(entries)
+            ).pack(pady=10)
+
+            return input_frame
+
+        def process_and_plot(entries):
+            import matplotlib.pyplot as plt
+            import matplotlib.cm as cm
+            import numpy as np
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+            try:
+                processes = entries["Processes (comma-separated)"].get().split(",")
+                arrival = list(map(int, entries["Arrival Times (comma-separated)"].get().split(",")))
+                burst = list(map(int, entries["Burst Times (comma-separated)"].get().split(",")))
+                priority = list(map(int, entries["Priorities (comma-separated, lower is higher)"].get().split(",")))
+
+                n = len(processes)
+                remaining = burst[:]
+                complete = 0
+                time = 0
+                gantt = []
+                prev_proc = None
+
+                while complete != n:
+                    idx = -1
+                    best_priority = float("inf")
+                    for i in range(n):
+                        if arrival[i] <= time and remaining[i] > 0:
+                            if priority[i] < best_priority:
+                                best_priority = priority[i]
+                                idx = i
+                            elif priority[i] == best_priority and arrival[i] < arrival[idx]:
+                                idx = i
+
+                    if idx == -1:
+                        time += 1
+                        continue
+
+                    if prev_proc != idx:
+                        if prev_proc is not None and remaining[prev_proc] > 0:
+                            gantt[-1] = (gantt[-1][0], gantt[-1][1], time)
+                        gantt.append((processes[idx], time, time + 1))
+                    else:
+                        gantt[-1] = (gantt[-1][0], gantt[-1][1], time + 1)
+
+                    remaining[idx] -= 1
+                    prev_proc = idx
+
+                    if remaining[idx] == 0:
+                        complete += 1
+                        prev_proc = None
+
+                    time += 1
+
+                # Merge adjacent same-process entries
+                merged = []
+                for proc, start, end in gantt:
+                    if merged and merged[-1][0] == proc and merged[-1][2] == start:
+                        merged[-1] = (proc, merged[-1][1], end)
+                    else:
+                        merged.append((proc, start, end))
+
+                # Coloring
+                colors = cm.tab20(np.linspace(0, 1, len(set([p[0] for p in merged]))))
+                proc_color_map = {pid: colors[i] for i, pid in enumerate(sorted(set([p[0] for p in merged])))}
+
+                fig, ax = plt.subplots(figsize=(8, 2))
+                for pid, start, end in merged:
+                    ax.barh(0, end - start, left=start, color=proc_color_map[pid], edgecolor='black')
+                    ax.text(start + (end - start) / 2, 0, pid, ha='center', va='center', color='white', fontsize=9)
+
+                ax.set_title("Priority Scheduling (Preemptive) - Gantt Chart")
+                ax.set_yticks([])
+                ax.set_xlabel("Time")
+                ax.grid(True)
+
+                chart_window = ttk.Toplevel(self.root)
+                chart_window.title("Priority (Preemptive) Visualization")
+                chart_window.geometry("800x300")
+
+                canvas = FigureCanvasTkAgg(fig, master=chart_window)
+                canvas.draw()
+                canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
+            except Exception as e:
+                messagebox.showerror("Input Error", f"Error: {e}")
+
+        self.show_dialog("Priority Scheduling (Preemptive)", layout)
+
+    # Visualize Round Robin Scheduling
+    def visualize_round_robin(self):
+        def layout(dialog):
+            input_frame = ttk.Frame(dialog, padding=10)
+            input_frame.pack(fill=BOTH, expand=True)
+
+            entries = {
+                "Processes (comma-separated)": None,
+                "Arrival Times (comma-separated)": None,
+                "Burst Times (comma-separated)": None,
+                "Time Quantum": None
+            }
+
+            for label in entries:
+                ttk.Label(input_frame, text=label).pack()
+                entry = ttk.Entry(input_frame, width=60)
+                entry.pack(pady=5)
+                entries[label] = entry
+
+            ttk.Button(
+                input_frame,
+                text="Generate Charts",
+                bootstyle="success",
+                command=lambda: process_and_plot(entries)
+            ).pack(pady=10)
+
+            return input_frame
+
+        def process_and_plot(entries):
+            import matplotlib.pyplot as plt
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+            import matplotlib.cm as cm
+            import numpy as np
+
+            try:
+                processes = entries["Processes (comma-separated)"].get().split(",")
+                arrival = list(map(int, entries["Arrival Times (comma-separated)"].get().split(",")))
+                burst = list(map(int, entries["Burst Times (comma-separated)"].get().split(",")))
+                quantum = int(entries["Time Quantum"].get())
+
+                n = len(processes)
+                remaining = burst[:]
+                time = 0
+                queue = []
+                gantt = []
+                visited = [False] * n
+
+                while True:
+                    for i in range(n):
+                        if arrival[i] <= time and not visited[i]:
+                            queue.append(i)
+                            visited[i] = True
+
+                    if not queue:
+                        if all(r == 0 for r in remaining):
+                            break
+                        time += 1
+                        continue
+
+                    idx = queue.pop(0)
+                    exec_time = min(quantum, remaining[idx])
+                    gantt.append((processes[idx], time, time + exec_time))
+                    time += exec_time
+                    remaining[idx] -= exec_time
+
+                    # Enqueue newly arrived processes during execution
+                    for i in range(n):
+                        if arrival[i] <= time and not visited[i]:
+                            queue.append(i)
+                            visited[i] = True
+
+                    if remaining[idx] > 0:
+                        queue.append(idx)
+
+                # Plotting Gantt Chart
+                fig, ax = plt.subplots(figsize=(9, 2.5))
+
+                unique_pids = sorted(set(p[0] for p in gantt))
+                colors = cm.tab20(np.linspace(0, 1, len(unique_pids)))
+                proc_color_map = {pid: colors[i] for i, pid in enumerate(unique_pids)}
+
+                for pid, start, end in gantt:
+                    ax.barh(0, end - start, left=start, color=proc_color_map[pid], edgecolor="black")
+                    ax.text(start + (end - start) / 2, 0, pid, ha="center", va="center", color="white", fontsize=9)
+
+                ax.set_yticks([])
+                ax.set_title("Round Robin Gantt Chart")
+                ax.set_xlabel("Time")
+                ax.grid(True)
+
+                chart_window = ttk.Toplevel(self.root)
+                chart_window.title("Round Robin Visualization")
+                chart_window.geometry("850x300")
+
+                canvas = FigureCanvasTkAgg(fig, master=chart_window)
+                canvas.draw()
+                canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
+            except Exception as e:
+                messagebox.showerror("Input Error", f"Error: {e}")
+
+        self.show_dialog("Round Robin Scheduling", layout)
+
+
+
+
+
+
+
+
+
+
 
     
     def view_trash_bin(self):

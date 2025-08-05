@@ -2,7 +2,7 @@
 
 ## 🧾 Overview
 The **Virtual File System (VFS)** is a Python-based simulation of a traditional file system with a **futuristic, cross-platform GUI** built using `ttkbootstrap`.  
-It emulates file management operations inside a virtual environment and introduces modern features like **version control**, an **analytics dashboard**, and **dynamic theming** — all in a sleek desktop interface.
+It emulates file management operations inside a virtual environment and introduces modern features like **version control**, an **analytics dashboard**, and **CPU scheduling visualizations** — all in a sleek desktop interface.
 
 ---
 
@@ -22,6 +22,17 @@ It emulates file management operations inside a virtual environment and introduc
 - Line graph timeline of file creation dates
 - View total file count, size, and most modified files
 
+### ⚙️ CPU Scheduling Visualizer
+- Select from key scheduling algorithms:
+  - First-Come, First-Served (FCFS)
+  - Shortest Job First (SJF)
+  - Shortest Remaining Time First (SRTF)
+  - Round Robin
+  - Priority (Non-Preemptive)
+  - Priority (Preemptive)
+- Input process data and visualize Gantt Charts dynamically
+- Understand execution order, preemption, and CPU utilization
+
 ### 📜 Metadata Handling
 - View file size, creation date, and modification time
 - Search files and inspect details instantly
@@ -35,8 +46,8 @@ It emulates file management operations inside a virtual environment and introduc
 - Fixed window layout with status bar
 - Built using `ttkbootstrap` for a professional, dark-themed appearance
 
-### Persistence
--Save the state of the virtual file system to disk and load it upon initialization.
+### 💾 Persistence
+- Saves the state of the virtual file system to disk and loads it upon startup
 
 ---
 
@@ -46,6 +57,8 @@ It emulates file management operations inside a virtual environment and introduc
 - Packages:
   - `ttkbootstrap`
   - `matplotlib`
+
+---
 
 ## Installation
 
@@ -94,13 +107,21 @@ View File Versions: Browse historical versions and restore any
 📊 Analytics
 Analytics Panel: View charts, statistics, and insights about file activity
 
+🧠 CPU Scheduling
+Gantt Chart Visualizations for:
+FCFS
+SJF
+SRTF
+Round Robin (time quantum input)
+Priority Scheduling (both Preemptive & Non-Preemptive)
+
 🎨 Theme
 Switch Theme: Apply futuristic themes in real-time
 
 ## Project Structure
 Virtual-File-System/
 │
-├── futuristic_vfs_app.py   # Main GUI app (Neo UI)
+├── vfs_app.py              # Main GUI app (Neo UI)
 ├── vfs_core.py             # Core file logic & versioning
 ├── vfs_metadata.py         # Metadata indexing and file search
 ├── requirements.txt        # Python dependencies
